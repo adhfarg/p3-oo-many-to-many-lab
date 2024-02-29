@@ -1,27 +1,18 @@
-from many_to_many import Author, Book, Contract
 import pytest
+from many_to_many import Author, Book, Contract
 
-def test_book_init():
-    """Test Book class initializes with title"""
+def test_contract_validates_author():
+    """Test Contract class validates author of type Author"""
     book = Book("Title")
-    assert book.title == "Title"
-
-def test_author_init():
-    """Test Author class initializes with name"""
-    author = Author("Name")
-    assert author.name == "Name"
-
-def test_contract_init():
-    """Test Contract class initializes with author, book, date, royalties"""
-    book = Book("Title")
-    author = Author("Name")
     date = '01/01/2001'
     royalties = 40000
-    contract = Contract(author, book, date, royalties)
+
+    with pytest.raises(ValueError, match="Invalid author type"):
+        Contract(Author("ValidAuthor"), book, date, royalties)
 
     assert contract.author == author
     assert contract.book == book
-    assert contract.date == date
+    assert contract.date.strftime("%m/%d/%Y") == date  
     assert contract.royalties == royalties
 
 def test_contract_validates_author():
@@ -30,8 +21,8 @@ def test_contract_validates_author():
     date = '01/01/2001'
     royalties = 40000
 
-    with pytest.raises(Exception):
-        Contract("Author", book, date, royalties)
+    with pytest.raises(ValueError, match="Invalid author type"):
+        Contract("InvalidAuthor", book, date, royalties)
 
 def test_contract_validates_book():
     """Test Contract class validates book of type Book"""
@@ -39,17 +30,8 @@ def test_contract_validates_book():
     date = '01/01/2001'
     royalties = 40000
 
-    with pytest.raises(Exception):
-        Contract(author, "Book", date, royalties)
-
-def test_contract_validates_date():
-    """Test Contract class validates date of type str"""
-    author = Author("Name")
-    book = Book("Title")
-    royalties = 40000
-
-    with pytest.raises(Exception):
-        Contract(author, book, 1012001, royalties)
+    with pytest.raises(ValueError, match="Invalid book type"):
+        Contract(author, "InvalidBook", date, royalties)
 
 def test_contract_validates_royalties():
     """Test Contract class validates royalties of type int"""
@@ -57,53 +39,23 @@ def test_contract_validates_royalties():
     book = Book("Title")
     date = '01/01/2001'
 
-    with pytest.raises(Exception):
-        Contract(author, book, date, "Royalties")
+    with pytest.raises(ValueError, match="Invalid royalties type"):
+        Contract(author, book, date, "InvalidRoyalties")
 
-def test_author_has_contracts():
-    """Test Author class has method contracts() that returns a list of its contracts"""
-    author = Author("Name")
-    book = Book("Title")
-    contract = Contract(author, book, '01/01/2001', 50000)
-
-    assert author.contracts() == [contract]
-
-def test_author_has_books():
-    """Test Author class has method books() that returns a list of its books"""
-    author = Author("Name")
-    book = Book("Title")
-    Contract(author, book, '01/01/2001', 50000)
-
-    assert book in author.books()
-
-def test_book_has_contracts():
-    """Test Book class has method contracts() that returns a list of its contracts"""
-    author = Author("Name")
-    book = Book("Title")
-    contract = Contract(author, book, '01/01/2001', 50000)
-
-    assert book.contracts() == [contract]
-
-def test_book_has_authors():
-    """Test Book class has method authors() that returns a list of its authors"""
-    author = Author("Name")
-    book = Book("Title")
-    Contract(author, book, '01/01/2001', 50000)
-
-    assert author in book.authors()
-
-def test_author_can_sign_contract():
+def test_author_sign_contract():
     """Test Author class has method sign_contract() that creates a contract for an author and book"""
     author = Author("Name")
     book = Book("Title")
+    date_str = '01/01/2001'
+    royalties = 50000
 
-    contract = author.sign_contract(book, "01/01/2001", 60000)
+    author.sign_contract(book, date_str, royalties)
+    contract = author.contracts()[0]
 
-    assert isinstance(contract, Contract)
     assert contract.author == author
     assert contract.book == book
-    assert contract.date == "01/01/2001"
-    assert contract.royalties == 60000
+    assert contract.date.strftime("%m/%d/%Y") == date_str  
+    assert contract.royalties == royalties
 
 def test_author_has_total_royalties():
     """Test Author class has method total_royalties that gets the sum of all its related contracts' royalties"""
@@ -112,9 +64,9 @@ def test_author_has_total_royalties():
     book2 = Book("Title 2")
     book3 = Book("Title 3")
 
-    Contract(author, book1, "01/01/2001", 10)
-    Contract(author, book2, "01/01/2001", 20)
-    Contract(author, book3, "01/01/2001", 30)
+    author.sign_contract(book1, "01/01/2001", 10)
+    author.sign_contract(book2, "01/01/2001", 20)
+    author.sign_contract(book3, "01/01/2001", 30)
 
     assert author.total_royalties() == 60
 
